@@ -22,14 +22,22 @@ import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
 
-    TextView txtJson;
+    TextView txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        txtJson = findViewById(R.id.txtJSON);
+        txtRank = findViewById(R.id.txtRank);
+        txtUSD = findViewById(R.id.txtUSD);
+        txtCap = findViewById(R.id.txtCap);
+        txtVol24 = findViewById(R.id.txtVol24);
+        txt1H = findViewById(R.id.txt1h);
+        txt24h = findViewById(R.id.txt24h);
+        txt7D = findViewById(R.id.txt7D);
+        txtSupply = findViewById(R.id.txtSupply);
+
 
         new JsonTask().execute("https://api.coinmarketcap.com/v1/ticker/ravencoin/");
 
@@ -103,9 +111,9 @@ public class MainActivity extends AppCompatActivity {
                 int tfh_volume_usd    = jsonobject.getInt("24h_volume_usd");
                 int market_cap_usd    = jsonobject.getInt("market_cap_usd");
                 int total_supply    = jsonobject.getInt("total_supply");
-                int percent_change_1h    = jsonobject.getInt("percent_change_1h");
-                int percent_change_24h    = jsonobject.getInt("percent_change_24h");
-                int percent_change_7d    = jsonobject.getInt("percent_change_7d");
+                long percent_change_1h    = jsonobject.getInt("percent_change_1h");
+                long percent_change_24h    = jsonobject.getInt("percent_change_24h");
+                long percent_change_7d    = jsonobject.getInt("percent_change_7d");
                 long last_updated    = jsonobject.getLong("last_updated");
 
                 // convert seconds to milliseconds
@@ -116,7 +124,17 @@ public class MainActivity extends AppCompatActivity {
                 String formattedDate = sdf.format(date);
                 System.out.println(formattedDate);
 
-                txtJson.setText("Rank: " + rank + "\n" +
+                txtRank.setText("Rank: \n" + rank);
+                txtUSD.setText("$"  + price_usd);
+                txtVol24.setText(" "  + tfh_volume_usd + " ");
+                txt1H.setText(" "  + percent_change_1h + " ");
+                txt24h.setText(" "  + percent_change_24h + " ");
+                txt7D.setText(" "  + percent_change_7d + " ");
+                txtCap.setText(" "  + market_cap_usd + " ");
+                txtSupply.setText(" "  + total_supply  + "/ 21,000,000,000");
+
+
+                /*txtRank.setText("Rank: " + rank + "\n" +
                                 "Price: $" + price_usd + "\n" +
                                 "Price BTC: " + price_btc + " \n" +
                                 "24H Volume: $" + tfh_volume_usd + "\n" +
@@ -126,6 +144,11 @@ public class MainActivity extends AppCompatActivity {
                                 "Change 24H: " + percent_change_24h + "%" + "\n" +
                                 "Change 7D: " + percent_change_7d + "%" + "\n" +
                                 "Last Updated: " + formattedDate);
+                                */
+
+
+
+
             }catch (JSONException e){
                 e.printStackTrace();
             }
