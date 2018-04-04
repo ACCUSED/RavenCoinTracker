@@ -1,6 +1,7 @@
 package com.warpigs_online.ravencointracker;
 
 import android.annotation.SuppressLint;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -15,6 +16,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.ref.WeakReference;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
@@ -22,30 +24,44 @@ import java.util.Date;
 
 public class MainActivity extends AppCompatActivity {
 
-    TextView txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        txtRank = findViewById(R.id.txtRank);
-        txtUSD = findViewById(R.id.txtUSD);
-        txtCap = findViewById(R.id.txtCap);
-        txtVol24 = findViewById(R.id.txtVol24);
-        txt1H = findViewById(R.id.txt1h);
-        txt24h = findViewById(R.id.txt24h);
-        txt7D = findViewById(R.id.txt7D);
-        txtSupply = findViewById(R.id.txtSupply);
+        TextView txtRank = findViewById(R.id.txtRank);
+        TextView txtUSD = findViewById(R.id.txtUSD);
+        TextView txtCap = findViewById(R.id.txtCap);
+        TextView txtVol24 = findViewById(R.id.txtVol24);
+        TextView txt1H = findViewById(R.id.txt1h);
+        TextView txt24h = findViewById(R.id.txt24h);
+        TextView txt7D = findViewById(R.id.txt7D);
+        TextView txtSupply = findViewById(R.id.txtSupply);
+        TextView txtUpdate = findViewById(R.id.txtUpdate);
 
 
-        new JsonTask().execute("https://api.coinmarketcap.com/v1/ticker/ravencoin/");
+        new JsonTask(txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate).execute("https://api.coinmarketcap.com/v1/ticker/ravencoin/");
 
     }
 
+    static private class JsonTask extends AsyncTask<String, String, String> {
+
+        final WeakReference<TextView> txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate;
 
 
-    private class JsonTask extends AsyncTask<String, String, String> {
+        private JsonTask(TextView txtRank, TextView txtUSD, TextView txtSupply, TextView txtCap, TextView txtVol24, TextView txt1H, TextView txt24h, TextView txt7D, TextView txtUpdate) {
+
+            this.txtRank = new WeakReference<>(txtRank);
+            this.txtUSD = new WeakReference<>(txtUSD);
+            this.txtSupply = new WeakReference<>(txtSupply);
+            this.txtCap = new WeakReference<>(txtCap);
+            this.txtVol24 = new WeakReference<>(txtVol24);
+            this.txt1H = new WeakReference<>(txt1H);
+            this.txt24h = new WeakReference<>(txt24h);
+            this.txt7D = new WeakReference<>(txt7D);
+            this.txtUpdate = new WeakReference<>(txtUpdate);
+
+        }
 
         protected String doInBackground(String... params) {
 
@@ -54,7 +70,6 @@ public class MainActivity extends AppCompatActivity {
             BufferedReader reader = null;
 
             try {
-                Log.d("INFO", params[0]);
                 URL url = new URL(params[0]);
                 connection = (HttpURLConnection) url.openConnection();
                 connection.connect();
@@ -104,7 +119,6 @@ public class MainActivity extends AppCompatActivity {
                 // Only one array so ZERO!
                 JSONObject jsonobject = jsonarray.getJSONObject(0);
 
-                String id       = jsonobject.getString("id");
                 int rank    = jsonobject.getInt("rank");
                 double price_usd    = jsonobject.getDouble("price_usd");
                 double price_btc    = jsonobject.getDouble("price_btc");
@@ -119,46 +133,41 @@ public class MainActivity extends AppCompatActivity {
                 // convert seconds to milliseconds
                 Date date = new java.util.Date(last_updated*1000L);
                 // the format of your date
-                SimpleDateFormat sdf =  new SimpleDateFormat("MMM dd, YYYY hh:mm:ss a",
+                SimpleDateFormat sdf =  new SimpleDateFormat("MMM dd, YYYY hh:mm a",
                         java.util.Locale.getDefault());
                 String formattedDate = sdf.format(date);
                 System.out.println(formattedDate);
 
-                txtRank.setText("Rank: \n" + rank);
+                final TextView txtRank = this.txtRank.get();
+                final TextView txtUSD =this.txtUSD.get();
+                final TextView txtSupply =this.txtSupply.get();
+                final TextView txtCap =this.txtCap .get();
+                final TextView txtVol24 =this.txtVol24.get();
+                final TextView txt1H =this.txt1H.get();
+                final TextView txt24h =this.txt24h.get();
+                final TextView txt7D =this.txt7D.get();
+                final TextView txtUpdate =this.txtUpdate.get();
+
+                txtRank.setText("Rank:\n" + rank);
                 txtUSD.setText("$"  + price_usd);
                 txtVol24.setText(" "  + tfh_volume_usd + " ");
                 txt1H.setText(" "  + percent_change_1h + " ");
                 txt24h.setText(" "  + percent_change_24h + " ");
                 txt7D.setText(" "  + percent_change_7d + " ");
                 txtCap.setText(" "  + market_cap_usd + " ");
-                txtSupply.setText(" "  + total_supply  + "/ 21,000,000,000");
+                txtSupply.setText(" "  + total_supply  + " / 21,000,000,000");
+                txtUpdate.setText(" " + formattedDate + " ");
 
+                if (txt1H.getText().toString().contains("-")) { txt1H.setTextColor(Color.RED);} else txt1H.setTextColor(Color.GREEN);
+                if (txt24h.getText().toString().contains("-")) { txt24h.setTextColor(Color.RED);} else txt24h.setTextColor(Color.GREEN);
+                if (txt7D.getText().toString().contains("-")) { txt7D.setTextColor(Color.RED);} else txt7D.setTextColor(Color.GREEN);
 
-                /*txtRank.setText("Rank: " + rank + "\n" +
-                                "Price: $" + price_usd + "\n" +
-                                "Price BTC: " + price_btc + " \n" +
-                                "24H Volume: $" + tfh_volume_usd + "\n" +
-                                "Market Cap USD: $" + market_cap_usd + "\n" +
-                                "Supply: " + total_supply + "/ 21,000,000,000" + "\n" +
-                                "Change 1H: " + percent_change_1h + "%" + "\n" +
-                                "Change 24H: " + percent_change_24h + "%" + "\n" +
-                                "Change 7D: " + percent_change_7d + "%" + "\n" +
-                                "Last Updated: " + formattedDate);
-                                */
-
-
-
-
-            }catch (JSONException e){
+            } catch (JSONException e) {
                 e.printStackTrace();
             }
 
 
-
-
-
-
-            Log.d("INFO", "msg: " + result);
         }
+
     }
 }
