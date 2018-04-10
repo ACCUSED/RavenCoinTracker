@@ -1,6 +1,8 @@
 package com.warpigs_online.ravencointracker;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
@@ -9,6 +11,7 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.TextView;
 
 import org.json.JSONArray;
@@ -29,6 +32,8 @@ public class MainActivity extends AppCompatActivity {
 
     static int urlNumber = 0;
     static double combo = 0;
+    static boolean brank, bprice, bwallet, btfhour, bmarket, bsupply, bpercent1h, bpercent24h, bpercent7d;
+    static String WalletAddress;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,6 +53,23 @@ public class MainActivity extends AppCompatActivity {
 
         new JsonTask(txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate).execute("https://api.coinmarketcap.com/v1/ticker/ravencoin/");
 
+        WhatToShow();
+
+    }
+
+    private void WhatToShow() {
+
+        SharedPreferences settings = getSharedPreferences("Settings", 0);
+        brank = settings.getBoolean("Rank", true);
+        bprice = settings.getBoolean("Price", true);
+        bwallet = settings.getBoolean("Wallet", false);
+        btfhour = settings.getBoolean("24Hour", true);
+        bmarket = settings.getBoolean("Market", true);
+        bsupply = settings.getBoolean("Supply", true);
+        bpercent1h = settings.getBoolean("Percent1h", true);
+        bpercent24h = settings.getBoolean("Percent24h", true);
+        bpercent7d = settings.getBoolean("Percent7d", true);
+        WalletAddress = settings.getString("walletAddress", "Raven Coin Wallet Address");
     }
 
     @Override
@@ -62,11 +84,16 @@ public class MainActivity extends AppCompatActivity {
         // Handle item selection
         switch (item.getItemId()) {
             case R.id.settings:
-                Log.d("INFO", "GO TO SETTINGS");
+                GoToSettings();
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    private void GoToSettings() {
+        Intent intent = new Intent(this, Settings.class);
+        startActivity(intent);
     }
 
     static private class JsonTask extends AsyncTask<String, String, String> {
@@ -108,8 +135,6 @@ public class MainActivity extends AppCompatActivity {
 
                 while ((line = reader.readLine()) != null) {
                     buffer.append(line).append("\n");
-                    Log.d("Response: ", "> " + line);
-
                 }
 
                 return buffer.toString();
@@ -197,20 +222,39 @@ public class MainActivity extends AppCompatActivity {
                     String mcuC = addCommas("" + market_cap_usd);
 
                     txtRank.setText("Rank: " + rank);
-                    txtUSD.setText("$" + price_usd);
+                    if (!brank) { txtRank.setVisibility(View.GONE); }
+                    else { txtRank.setVisibility(View.VISIBLE); }
+                    if(!bprice) { txtUSD.setText(""); }
+                    else { txtUSD.setText("$" + price_usd);}
+                    if (!btfhour) { txtVol24.setVisibility(View.GONE); }
+                    else { txtVol24.setVisibility(View.VISIBLE); }
                     txtVol24.setText("24H Vol\n" + tfhC);
+                    if (!btfhour) { txt24h.setVisibility(View.GONE); }
+                    else { txt24h.setVisibility(View.VISIBLE); }
                     txt1H.setText("Change 1 Hour\n" + percent_change_1h + "%");
+                    if (!bpercent1h) { txt1H.setVisibility(View.GONE); }
+                    else { txt1H.setVisibility(View.VISIBLE); }
                     txt24h.setText("Change 24 Hour\n" + percent_change_24h + "%");
+                    if (!bpercent24h) { txt24h.setVisibility(View.GONE); }
+                    else { txt24h.setVisibility(View.VISIBLE); }
                     txt7D.setText("Change 7 Day\n" + percent_change_7d + "%");
+                    if (!bpercent7d) { txt7D.setVisibility(View.GONE); }
+                    else { txt7D.setVisibility(View.VISIBLE); }
                     txtCap.setText("Market Cap\n" + mcuC);
+                    if (!bmarket) { txtCap.setVisibility(View.GONE); }
+                    else { txtCap.setVisibility(View.VISIBLE); }
                     txtSupply.setText("Supply:\n" + tsC + "/\n21,000,000,000");
+                    if (!bsupply) { txtSupply.setVisibility(View.GONE); }
+                    else { txtSupply.setVisibility(View.VISIBLE); }
                     txtUpdate.setText(formattedDate);
 
                     if (txt1H.getText().toString().contains("-")) {
                         txt1H.setTextColor(Color.RED);
                         txtUSD.setTextColor(Color.RED);
-                    } else txt1H.setTextColor(Color.GREEN);
-                    txtUSD.setTextColor(Color.GREEN);
+                    } else {
+                        txt1H.setTextColor(Color.GREEN);
+                        txtUSD.setTextColor(Color.GREEN);
+                    }
                     if (txt24h.getText().toString().contains("-")) {
                         txt24h.setTextColor(Color.RED);
                     } else txt24h.setTextColor(Color.GREEN);
@@ -221,13 +265,12 @@ public class MainActivity extends AppCompatActivity {
                     urlNumber = 1;
                     // To get amount use has.
                     // http://explorer.threeeyed.info/ext/getaddress/
-                    new JsonTask(txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate).execute("http://explorer.threeeyed.info/ext/getaddress/RPkJsE3vU5kvjNUUSBhVrdeoG9krR1vf2Y");
+                    new JsonTask(txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate).execute("http://explorer.threeeyed.info/ext/getaddress/" + WalletAddress);
 
                 } else {
 
                     JSONObject jsonobject = new JSONObject(result);
 
-                    Log.d("info","I ran");
                     double price_usd = jsonobject.getDouble("balance");
                     final TextView txtUSD = this.txtUSD.get();
 
@@ -235,7 +278,7 @@ public class MainActivity extends AppCompatActivity {
                     // Round it
                     combo = Math.round(combo * 100.0) / 100.0;
 
-                    txtUSD.setText(txtUSD.getText() + "\n$" + combo);
+                    if (bwallet) { txtUSD.setText(txtUSD.getText() + "\n$" + combo); }
 
                 }
 
