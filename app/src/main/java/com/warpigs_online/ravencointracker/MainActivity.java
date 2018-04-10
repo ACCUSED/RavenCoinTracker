@@ -278,7 +278,8 @@ public class MainActivity extends AppCompatActivity {
                     // Round it
                     combo = Math.round(combo * 100.0) / 100.0;
 
-                    if (bwallet) { txtUSD.setText(txtUSD.getText() + "\n$" + combo); }
+                    if (bwallet && bprice) { txtUSD.setText(txtUSD.getText() + "\n$" + combo); }
+                    if (bwallet && !bprice) { txtUSD.setText(txtUSD.getText() + "$" + combo); }
 
                 }
 
