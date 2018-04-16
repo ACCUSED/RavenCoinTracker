@@ -5,9 +5,9 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.AsyncTask;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -35,26 +35,79 @@ public class MainActivity extends AppCompatActivity {
     static boolean brank, bprice, bwallet, btfhour, bmarket, bsupply, bpercent1h, bpercent24h, bpercent7d;
     static String WalletAddress;
 
+    SwipeRefreshLayout sRefresh;
+    TextView txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        TextView txtRank = findViewById(R.id.txtRank);
-        TextView txtUSD = findViewById(R.id.txtUSD);
-        TextView txtCap = findViewById(R.id.txtCap);
-        TextView txtVol24 = findViewById(R.id.txtVol24);
-        TextView txt1H = findViewById(R.id.txt1h);
-        TextView txt24h = findViewById(R.id.txt24h);
-        TextView txt7D = findViewById(R.id.txt7D);
-        TextView txtSupply = findViewById(R.id.txtSupply);
-        TextView txtUpdate = findViewById(R.id.txtUpdate);
+        txtRank = findViewById(R.id.txtRank);
+        txtUSD = findViewById(R.id.txtUSD);
+        txtCap = findViewById(R.id.txtCap);
+        txtVol24 = findViewById(R.id.txtVol24);
+        txt1H = findViewById(R.id.txt1h);
+        txt24h = findViewById(R.id.txt24h);
+        txt7D = findViewById(R.id.txt7D);
+        txtSupply = findViewById(R.id.txtSupply);
+        txtUpdate = findViewById(R.id.txtUpdate);
+        sRefresh = findViewById(R.id.swiperefresh);
 
 
-        new JsonTask(txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate).execute("https://api.coinmarketcap.com/v1/ticker/ravencoin/");
+        sRefresh.setRefreshing(true);
+
+        if (sRefresh.isRefreshing()) { StartTheRefresh(txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate); }
+
+        sRefresh.setOnRefreshListener(
+                new SwipeRefreshLayout.OnRefreshListener() {
+                    @Override
+                    public void onRefresh() {
+                        StartTheRefresh(txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate);
+                    }
+                }
+        );
+
+
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        StartTheRefresh(txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate);
+
+    }
+
+    private void StartTheRefresh(TextView txtRank, TextView txtUSD, TextView txtSupply, TextView txtCap, TextView txtVol24, TextView txt1H, TextView txt24h, TextView txt7D, TextView txtUpdate) {
+
+        urlNumber = 0;
+        new JsonTask(txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate, sRefresh).execute("https://api.coinmarketcap.com/v1/ticker/ravencoin/");
 
         WhatToShow();
 
+        if (!brank) { txtRank.setVisibility(View.GONE); }
+        else { txtRank.setVisibility(View.VISIBLE); }
+
+        if (!btfhour) { txtVol24.setVisibility(View.GONE); }
+        else { txtVol24.setVisibility(View.VISIBLE); }
+
+        if (!btfhour) { txt24h.setVisibility(View.GONE); }
+        else { txt24h.setVisibility(View.VISIBLE); }
+
+        if (!bpercent1h) { txt1H.setVisibility(View.GONE); }
+        else { txt1H.setVisibility(View.VISIBLE); }
+
+        if (!bpercent24h) { txt24h.setVisibility(View.GONE); }
+        else { txt24h.setVisibility(View.VISIBLE); }
+
+        if (!bpercent7d) { txt7D.setVisibility(View.GONE); }
+        else { txt7D.setVisibility(View.VISIBLE); }
+
+        if (!bmarket) { txtCap.setVisibility(View.GONE); }
+        else { txtCap.setVisibility(View.VISIBLE); }
+
+        if (!bsupply) { txtSupply.setVisibility(View.GONE); }
+        else { txtSupply.setVisibility(View.VISIBLE); }
     }
 
     private void WhatToShow() {
@@ -100,7 +153,9 @@ public class MainActivity extends AppCompatActivity {
 
         private final WeakReference<TextView> txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate;
 
-        private JsonTask(TextView txtRank, TextView txtUSD, TextView txtSupply, TextView txtCap, TextView txtVol24, TextView txt1H, TextView txt24h, TextView txt7D, TextView txtUpdate) {
+        private final WeakReference<SwipeRefreshLayout> sRefresh;
+
+        private JsonTask(TextView txtRank, TextView txtUSD, TextView txtSupply, TextView txtCap, TextView txtVol24, TextView txt1H, TextView txt24h, TextView txt7D, TextView txtUpdate, SwipeRefreshLayout sRefresh) {
 
             this.txtRank = new WeakReference<>(txtRank);
             this.txtUSD = new WeakReference<>(txtUSD);
@@ -112,6 +167,7 @@ public class MainActivity extends AppCompatActivity {
             this.txt7D = new WeakReference<>(txt7D);
             this.txtUpdate = new WeakReference<>(txtUpdate);
 
+            this.sRefresh = new WeakReference<>(sRefresh);
         }
 
         protected String doInBackground(String... params) {
@@ -204,7 +260,6 @@ public class MainActivity extends AppCompatActivity {
                     SimpleDateFormat sdf = new SimpleDateFormat("MMM dd, YYYY hh:mm a",
                             java.util.Locale.getDefault());
                     String formattedDate = sdf.format(date);
-                    System.out.println(formattedDate);
 
                     final TextView txtRank = this.txtRank.get();
                     final TextView txtUSD = this.txtUSD.get();
@@ -215,6 +270,7 @@ public class MainActivity extends AppCompatActivity {
                     final TextView txt24h = this.txt24h.get();
                     final TextView txt7D = this.txt7D.get();
                     final TextView txtUpdate = this.txtUpdate.get();
+                    final SwipeRefreshLayout sRefresh = this.sRefresh.get();
 
                     combo = price_usd;
                     String tfhC = addCommas("" + tfh_volume_usd);
@@ -222,30 +278,14 @@ public class MainActivity extends AppCompatActivity {
                     String mcuC = addCommas("" + market_cap_usd);
 
                     txtRank.setText("Rank: " + rank);
-                    if (!brank) { txtRank.setVisibility(View.GONE); }
-                    else { txtRank.setVisibility(View.VISIBLE); }
                     if(!bprice) { txtUSD.setText(""); }
                     else { txtUSD.setText("$" + price_usd);}
-                    if (!btfhour) { txtVol24.setVisibility(View.GONE); }
-                    else { txtVol24.setVisibility(View.VISIBLE); }
                     txtVol24.setText("24H Vol\n" + tfhC);
-                    if (!btfhour) { txt24h.setVisibility(View.GONE); }
-                    else { txt24h.setVisibility(View.VISIBLE); }
                     txt1H.setText("Change 1 Hour\n" + percent_change_1h + "%");
-                    if (!bpercent1h) { txt1H.setVisibility(View.GONE); }
-                    else { txt1H.setVisibility(View.VISIBLE); }
                     txt24h.setText("Change 24 Hour\n" + percent_change_24h + "%");
-                    if (!bpercent24h) { txt24h.setVisibility(View.GONE); }
-                    else { txt24h.setVisibility(View.VISIBLE); }
                     txt7D.setText("Change 7 Day\n" + percent_change_7d + "%");
-                    if (!bpercent7d) { txt7D.setVisibility(View.GONE); }
-                    else { txt7D.setVisibility(View.VISIBLE); }
                     txtCap.setText("Market Cap\n" + mcuC);
-                    if (!bmarket) { txtCap.setVisibility(View.GONE); }
-                    else { txtCap.setVisibility(View.VISIBLE); }
                     txtSupply.setText("Supply:\n" + tsC + "/\n21,000,000,000");
-                    if (!bsupply) { txtSupply.setVisibility(View.GONE); }
-                    else { txtSupply.setVisibility(View.VISIBLE); }
                     txtUpdate.setText(formattedDate);
 
                     if (txt1H.getText().toString().contains("-")) {
@@ -265,7 +305,7 @@ public class MainActivity extends AppCompatActivity {
                     urlNumber = 1;
                     // To get amount use has.
                     // http://explorer.threeeyed.info/ext/getaddress/
-                    new JsonTask(txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate).execute("http://explorer.threeeyed.info/ext/getaddress/" + WalletAddress);
+                    new JsonTask(txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate, sRefresh).execute("http://explorer.threeeyed.info/ext/getaddress/" + WalletAddress);
 
                 } else {
 
@@ -282,6 +322,11 @@ public class MainActivity extends AppCompatActivity {
                     if (bwallet && !bprice) { txtUSD.setText(txtUSD.getText() + "$" + combo); }
 
                 }
+
+
+                final SwipeRefreshLayout sRefresh = this.sRefresh.get();
+
+                sRefresh.setRefreshing(false);
 
 
             } catch (JSONException e) {

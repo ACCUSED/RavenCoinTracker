@@ -3,6 +3,7 @@ package com.warpigs_online.ravencointracker;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.app.Activity;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
@@ -12,24 +13,17 @@ import android.widget.EditText;
 import android.widget.Switch;
 import android.widget.Toast;
 
-public class Settings extends Activity {
+import java.util.Objects;
+
+public class Settings extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
+        Objects.requireNonNull(getSupportActionBar()).setDisplayHomeAsUpEnabled(true);
         // Prevents keyboard from opening because the Edit text.
         getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
-
-        Button saveButton = findViewById(R.id.bSave);
-
-        saveButton.setOnClickListener(new View.OnClickListener(){
-            @Override
-            //On click function
-            public void onClick(View view) {
-                SaveButton();
-            }
-        });
 
         Switch sRank = findViewById(R.id.sRank);
         Switch sPrice = findViewById(R.id.sPrice);
@@ -42,15 +36,13 @@ public class Settings extends Activity {
         Switch sPercent24h = findViewById(R.id.sPercent24h);
         final EditText eWallet = findViewById(R.id.eWallet);
 
-        saveButton = findViewById(R.id.bSave);
+        Button saveButton = findViewById(R.id.bSave);
 
         saveButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
 
                 SharedPreferences settings = getSharedPreferences("Settings", 0);
                 SharedPreferences.Editor editor = settings.edit();
-
-                Log.v("EditText value=", eWallet.getText().toString());
 
                 editor.putString("walletAddress", eWallet.getText().toString());
                 editor.apply();
@@ -170,11 +162,6 @@ public class Settings extends Activity {
             }
         });
 
-
-
-    }
-
-    public void SaveButton(){
 
 
     }
