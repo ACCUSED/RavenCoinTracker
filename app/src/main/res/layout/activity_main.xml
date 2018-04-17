@@ -212,6 +212,17 @@
             app:layout_constraintRight_toRightOf="parent"
             tools:ignore="HardcodedText" />
 
+        <EditText
+            android:id="@+id/addHistory"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:ems="10"
+            android:inputType="textPassword"
+            android:visibility="gone"
+            tools:layout_editor_absoluteX="0dp"
+            tools:layout_editor_absoluteY="468dp"
+            tools:ignore="LabelFor,MissingConstraints" />
+
 
     </android.support.constraint.ConstraintLayout>
 </android.support.v4.widget.SwipeRefreshLayout>

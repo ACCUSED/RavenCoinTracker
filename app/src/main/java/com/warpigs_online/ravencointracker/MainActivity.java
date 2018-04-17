@@ -8,10 +8,15 @@ import android.os.AsyncTask;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
+import android.widget.EditText;
 import android.widget.TextView;
 
 import org.json.JSONArray;
@@ -26,23 +31,29 @@ import java.lang.ref.WeakReference;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
     static int urlNumber = 0;
     static double combo = 0;
     static boolean brank, bprice, bwallet, btfhour, bmarket, bsupply, bpercent1h, bpercent24h, bpercent7d;
-    static String WalletAddress;
+    static String WalletAddress, historyToArray;
+    static List<String>HistoryMain = new ArrayList<>();
 
     SwipeRefreshLayout sRefresh;
     TextView txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate;
+    EditText addHistory;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        // Prevents keyboard from opening because the Edit text.
+        getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
 
         // init the TextViews
         txtRank = findViewById(R.id.txtRank);
@@ -55,35 +66,63 @@ public class MainActivity extends AppCompatActivity {
         txtSupply = findViewById(R.id.txtSupply);
         txtUpdate = findViewById(R.id.txtUpdate);
         sRefresh = findViewById(R.id.swiperefresh);
-
+        addHistory = findViewById(R.id.addHistory);
 
         sRefresh.setRefreshing(true);
 
-        if (sRefresh.isRefreshing()) { StartTheRefresh(txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate); }
+        if (sRefresh.isRefreshing()) { StartTheRefresh(txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate, addHistory); }
 
         sRefresh.setOnRefreshListener(
                 new SwipeRefreshLayout.OnRefreshListener() {
                     @Override
                     public void onRefresh() {
-                        StartTheRefresh(txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate);
+                        urlNumber = 0;
+                        StartTheRefresh(txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate, addHistory);
                     }
                 }
         );
+        // Kinda hacky fix to get the information I want without a leak. 
+        addHistory.addTextChangedListener(new TextWatcher() {
 
+            public void onTextChanged(CharSequence c, int start, int before, int count) {
+                Log.d("INFO", String.valueOf(addHistory.getText()));
+                HistoryMain.add("" + addHistory.getText());
+                SharedPreferences historyData = getSharedPreferences("History", 0);
+                SharedPreferences.Editor editor = historyData.edit();
+                String temp = "";
+                if (HistoryMain.size() > 0) {
+                    // Need to add timestamps as well to reduce clutter
+                    for (int i = 0; i < HistoryMain.size(); i++) {
+                        temp = temp + "," + HistoryMain.get(i);
+                        Log.d("INFO", String.valueOf(temp));
+                        editor.apply();
+                    }
+                }
+
+            }
+
+            public void beforeTextChanged(CharSequence c, int start, int count, int after) {
+                // this space intentionally left blank
+            }
+
+            public void afterTextChanged(Editable c) {
+                // this one too
+            }
+        });
 
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        StartTheRefresh(txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate);
+        StartTheRefresh(txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate, addHistory);
 
     }
 
-    private void StartTheRefresh(TextView txtRank, TextView txtUSD, TextView txtSupply, TextView txtCap, TextView txtVol24, TextView txt1H, TextView txt24h, TextView txt7D, TextView txtUpdate) {
+    private void StartTheRefresh(TextView txtRank, TextView txtUSD, TextView txtSupply, TextView txtCap, TextView txtVol24, TextView txt1H, TextView txt24h, TextView txt7D, TextView txtUpdate, EditText addHistory) {
 
         urlNumber = 0;
-        new JsonTask(txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate, sRefresh).execute("https://api.coinmarketcap.com/v1/ticker/ravencoin/");
+        new JsonTask(txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate, addHistory, sRefresh).execute("https://api.coinmarketcap.com/v1/ticker/ravencoin/");
 
         WhatToShow();
 
@@ -113,6 +152,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void WhatToShow() {
+
+        SharedPreferences historyData = getSharedPreferences("History", 0);
+        historyToArray = historyData.getString("History", "");
+
+        Log.d("INFO", "" + historyToArray);
+
+        if (historyToArray.contains(",")) {
+
+            HistoryMain = Arrays.asList(historyToArray.split(","));
+            Log.d("Recall", HistoryMain.get(0));
+        }
 
         SharedPreferences settings = getSharedPreferences("Settings", 0);
         brank = settings.getBoolean("Rank", true);
@@ -155,9 +205,11 @@ public class MainActivity extends AppCompatActivity {
 
         private final WeakReference<TextView> txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate;
 
+        private final WeakReference<EditText> addhistory;
+
         private final WeakReference<SwipeRefreshLayout> sRefresh;
 
-        private JsonTask(TextView txtRank, TextView txtUSD, TextView txtSupply, TextView txtCap, TextView txtVol24, TextView txt1H, TextView txt24h, TextView txt7D, TextView txtUpdate, SwipeRefreshLayout sRefresh) {
+        private JsonTask(TextView txtRank, TextView txtUSD, TextView txtSupply, TextView txtCap, TextView txtVol24, TextView txt1H, TextView txt24h, TextView txt7D, TextView txtUpdate, EditText addhistory, SwipeRefreshLayout sRefresh) {
 
             this.txtRank = new WeakReference<>(txtRank);
             this.txtUSD = new WeakReference<>(txtUSD);
@@ -168,6 +220,7 @@ public class MainActivity extends AppCompatActivity {
             this.txt24h = new WeakReference<>(txt24h);
             this.txt7D = new WeakReference<>(txt7D);
             this.txtUpdate = new WeakReference<>(txtUpdate);
+            this.addhistory = new WeakReference<>(addhistory);
 
             this.sRefresh = new WeakReference<>(sRefresh);
         }
@@ -275,12 +328,15 @@ public class MainActivity extends AppCompatActivity {
                     final TextView txt7D = this.txt7D.get();
                     final TextView txtUpdate = this.txtUpdate.get();
                     final SwipeRefreshLayout sRefresh = this.sRefresh.get();
+                    final EditText addHistory = this.addhistory.get();
 
                     // Lets add commas!
                     combo = price_usd;
                     String tfhC = addCommas("" + tfh_volume_usd);
                     String tsC = addCommas("" + total_supply);
                     String mcuC = addCommas("" + market_cap_usd);
+
+                    addHistory.setText("" + price_usd);
 
                     txtRank.setText("Rank: " + rank);
                     if(!bprice) { txtUSD.setText(""); } // Do this because it has the place holder of $--
@@ -316,9 +372,9 @@ public class MainActivity extends AppCompatActivity {
                     // To get amount user has.
                     // http://explorer.threeeyed.info/ext/getaddress/
                     if (bwallet)
-                        new JsonTask(txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate, sRefresh).execute("http://explorer.threeeyed.info/ext/getaddress/" + WalletAddress);
+                        new JsonTask(txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate, addHistory, sRefresh).execute("http://explorer.threeeyed.info/ext/getaddress/" + WalletAddress);
 
-                } else {
+                } else if (!result.contains("ravencoin")){
 
                     JSONObject jsonobject = new JSONObject(result);
 
