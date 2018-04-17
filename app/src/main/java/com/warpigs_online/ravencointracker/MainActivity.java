@@ -43,6 +43,8 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+
+        // init the TextViews
         txtRank = findViewById(R.id.txtRank);
         txtUSD = findViewById(R.id.txtUSD);
         txtCap = findViewById(R.id.txtCap);
@@ -235,6 +237,7 @@ public class MainActivity extends AppCompatActivity {
 
             try {
 
+                // This is to separate the url parses.
                 if (urlNumber == 0) {
 
                 JSONArray jsonarray = new JSONArray(result);
@@ -254,6 +257,7 @@ public class MainActivity extends AppCompatActivity {
                     long percent_change_7d = jsonobject.getInt("percent_change_7d");
                     long last_updated = jsonobject.getLong("last_updated");
 
+                    // Steps needed to get correct time for users.
                     // convert seconds to milliseconds
                     Date date = new java.util.Date(last_updated * 1000L);
                     // the format of your date
@@ -272,13 +276,14 @@ public class MainActivity extends AppCompatActivity {
                     final TextView txtUpdate = this.txtUpdate.get();
                     final SwipeRefreshLayout sRefresh = this.sRefresh.get();
 
+                    // Lets add commas!
                     combo = price_usd;
                     String tfhC = addCommas("" + tfh_volume_usd);
                     String tsC = addCommas("" + total_supply);
                     String mcuC = addCommas("" + market_cap_usd);
 
                     txtRank.setText("Rank: " + rank);
-                    if(!bprice) { txtUSD.setText(""); }
+                    if(!bprice) { txtUSD.setText(""); } // Do this because it has the place holder of $--
                     else { txtUSD.setText("$" + price_usd);}
                     txtVol24.setText("24H Vol\n" + tfhC);
                     txt1H.setText("Change 1 Hour\n" + percent_change_1h + "%");
@@ -288,6 +293,7 @@ public class MainActivity extends AppCompatActivity {
                     txtSupply.setText("Supply:\n" + tsC + "/\n21,000,000,000");
                     txtUpdate.setText(formattedDate);
 
+                    // Sets colors for if the values are going up or down.
                     if (txt1H.getText().toString().contains("-")) {
                         txt1H.setTextColor(Color.RED);
                         txtUSD.setTextColor(Color.RED);
@@ -295,17 +301,22 @@ public class MainActivity extends AppCompatActivity {
                         txt1H.setTextColor(Color.GREEN);
                         txtUSD.setTextColor(Color.GREEN);
                     }
+
                     if (txt24h.getText().toString().contains("-")) {
                         txt24h.setTextColor(Color.RED);
                     } else txt24h.setTextColor(Color.GREEN);
+
                     if (txt7D.getText().toString().contains("-")) {
                         txt7D.setTextColor(Color.RED);
                     } else txt7D.setTextColor(Color.GREEN);
 
+                    // So then it gets the wallet address.
                     urlNumber = 1;
-                    // To get amount use has.
+
+                    // To get amount user has.
                     // http://explorer.threeeyed.info/ext/getaddress/
-                    new JsonTask(txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate, sRefresh).execute("http://explorer.threeeyed.info/ext/getaddress/" + WalletAddress);
+                    if (bwallet)
+                        new JsonTask(txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate, sRefresh).execute("http://explorer.threeeyed.info/ext/getaddress/" + WalletAddress);
 
                 } else {
 
@@ -318,6 +329,7 @@ public class MainActivity extends AppCompatActivity {
                     // Round it
                     combo = Math.round(combo * 100.0) / 100.0;
 
+                    // This just makes sure it looks pretty.
                     if (bwallet && bprice) { txtUSD.setText(txtUSD.getText() + "\n$" + combo); }
                     if (bwallet && !bprice) { txtUSD.setText(txtUSD.getText() + "$" + combo); }
 
