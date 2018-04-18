@@ -43,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
     static boolean brank, bprice, bwallet, btfhour, bmarket, bsupply, bpercent1h, bpercent24h, bpercent7d;
     static String WalletAddress, historyToArray;
     static List<String>HistoryMain = new ArrayList<>();
+    static List<String>UpdateMain = new ArrayList<>();
 
     SwipeRefreshLayout sRefresh;
     TextView txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate;
@@ -81,22 +82,33 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
         );
-        // Kinda hacky fix to get the information I want without a leak. 
+        // Kinda hacky fix to get the information I want without a leak.
         addHistory.addTextChangedListener(new TextWatcher() {
 
             public void onTextChanged(CharSequence c, int start, int before, int count) {
-                Log.d("INFO", String.valueOf(addHistory.getText()));
+                if (HistoryMain.size() > 0) {
+                    HistoryMain = new ArrayList<>(HistoryMain);
+                    UpdateMain = new ArrayList<>(UpdateMain);
+                }
+                //Log.d("TextChanged", String.valueOf(HistoryMain.get(0) + " " + HistoryMain.get(1)));
                 HistoryMain.add("" + addHistory.getText());
+                UpdateMain.add("" + txtUpdate.getText());
                 SharedPreferences historyData = getSharedPreferences("History", 0);
                 SharedPreferences.Editor editor = historyData.edit();
                 String temp = "";
-                if (HistoryMain.size() > 0) {
+                if (HistoryMain.size() > 1) {
                     // Need to add timestamps as well to reduce clutter
                     for (int i = 0; i < HistoryMain.size(); i++) {
-                        temp = temp + "," + HistoryMain.get(i);
-                        Log.d("INFO", String.valueOf(temp));
-                        editor.apply();
+                        temp = temp + HistoryMain.get(i) + ",";
+                        Log.d("Temp", String.valueOf(temp));
+                        if (i + 1 == HistoryMain.size()) {
+                            editor.putString("History", temp + ",");
+                            editor.apply();
+                        }
                     }
+                } else {
+                    editor.putString("History", HistoryMain.get(0));
+                    editor.apply();
                 }
 
             }
@@ -121,10 +133,11 @@ public class MainActivity extends AppCompatActivity {
 
     private void StartTheRefresh(TextView txtRank, TextView txtUSD, TextView txtSupply, TextView txtCap, TextView txtVol24, TextView txt1H, TextView txt24h, TextView txt7D, TextView txtUpdate, EditText addHistory) {
 
-        urlNumber = 0;
-        new JsonTask(txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate, addHistory, sRefresh).execute("https://api.coinmarketcap.com/v1/ticker/ravencoin/");
 
         WhatToShow();
+
+        urlNumber = 0;
+        new JsonTask(txtRank, txtUSD, txtSupply, txtCap, txtVol24, txt1H, txt24h, txt7D, txtUpdate, addHistory, sRefresh).execute("https://api.coinmarketcap.com/v1/ticker/ravencoin/");
 
         if (!brank) { txtRank.setVisibility(View.GONE); }
         else { txtRank.setVisibility(View.VISIBLE); }
@@ -156,13 +169,15 @@ public class MainActivity extends AppCompatActivity {
         SharedPreferences historyData = getSharedPreferences("History", 0);
         historyToArray = historyData.getString("History", "");
 
-        Log.d("INFO", "" + historyToArray);
+        Log.d("ReCa", "Test " + historyToArray);
 
-        if (historyToArray.contains(",")) {
+        // Need to rewrite this. BAD BAD Code there...
+        //while (historyToArray.contains(",")) {
+        //    HistoryMain = Arrays.asList(historyToArray.split(","));
+        //    Log.d("Recall", HistoryMain.get(0));
 
-            HistoryMain = Arrays.asList(historyToArray.split(","));
-            Log.d("Recall", HistoryMain.get(0));
-        }
+        //}
+
 
         SharedPreferences settings = getSharedPreferences("Settings", 0);
         brank = settings.getBoolean("Rank", true);
